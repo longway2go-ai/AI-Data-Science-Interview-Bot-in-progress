@@ -7,4 +7,5 @@ speechrecognition
 pyttsx3
 pydantic
 PyPDF2
+openai
 python-multipart
