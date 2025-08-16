@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Interview (MCQ-based) Agent</title>
+  <title>AI Interview Agent</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     * {
@@ -104,7 +104,7 @@
     
     .backend-selection {
       display: flex;
-      gap: 20px;
+      gap: 15px;
       margin-bottom: 20px;
     }
     
@@ -577,7 +577,7 @@
         padding: 20px;
       }
       
-      .backend-selection {
+      .backend-selection, .difficulty-selection {
         flex-direction: column;
       }
       
@@ -590,7 +590,7 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1><i class="fas fa-robot"></i> AI Interview (MCQ-based) Agent</h1>
+    <h1><i class="fas fa-robot"></i> AI Interview Agent</h1>
     
     <!-- Upload Stage -->
     <div id="stage-upload">
@@ -614,6 +614,12 @@
             <input type="radio" name="backend" value="groq" id="groq" onchange="toggleApiKey()">
             <label for="groq" class="backend-label">
               <i class="fas fa-bolt"></i> Groq
+            </label>
+          </div>
+          <div class="backend-option">
+            <input type="radio" name="backend" value="openai" id="openai" onchange="toggleApiKey()">
+            <label for="openai" class="backend-label">
+              <i class="fas fa-robot"></i> OpenAI
             </label>
           </div>
         </div>
@@ -654,6 +660,11 @@
       <div id="groq-api-key" class="api-key-group hidden">
         <label for="groqKey"><i class="fas fa-key"></i> Groq API Key</label>
         <input type="password" id="groqKey" placeholder="Enter your Groq API key" />
+      </div>
+      
+      <div id="openai-api-key" class="api-key-group hidden">
+        <label for="openaiKey"><i class="fas fa-key"></i> OpenAI API Key</label>
+        <input type="password" id="openaiKey" placeholder="Enter your OpenAI API key (sk-...)" />
       </div>
       
       <button onclick="startInterview()" id="startBtn">
@@ -756,13 +767,20 @@
     const backend = document.querySelector('input[name="backend"]:checked').value;
     const geminiGroup = document.getElementById('gemini-api-key');
     const groqGroup = document.getElementById('groq-api-key');
+    const openaiGroup = document.getElementById('openai-api-key');
     
+    // Hide all groups first
+    geminiGroup.classList.add('hidden');
+    groqGroup.classList.add('hidden');
+    openaiGroup.classList.add('hidden');
+    
+    // Show the selected group
     if (backend === 'gemini') {
       geminiGroup.classList.remove('hidden');
-      groqGroup.classList.add('hidden');
-    } else {
-      geminiGroup.classList.add('hidden');
+    } else if (backend === 'groq') {
       groqGroup.classList.remove('hidden');
+    } else if (backend === 'openai') {
+      openaiGroup.classList.remove('hidden');
     }
   }
   
@@ -874,9 +892,15 @@
     const fileInput = document.getElementById('resumeFile');
     const backend = document.querySelector('input[name="backend"]:checked').value;
     const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-    const apiKey = backend === 'gemini' ? 
-      document.getElementById('geminiKey').value : 
-      document.getElementById('groqKey').value;
+    
+    let apiKey;
+    if (backend === 'gemini') {
+      apiKey = document.getElementById('geminiKey').value;
+    } else if (backend === 'groq') {
+      apiKey = document.getElementById('groqKey').value;
+    } else if (backend === 'openai') {
+      apiKey = document.getElementById('openaiKey').value;
+    }
     
     if (!fileInput.files.length) {
       showAlert("Please select a resume file");
@@ -1179,6 +1203,7 @@
     document.getElementById("resumeFile").value = "";
     document.getElementById("geminiKey").value = "";
     document.getElementById("groqKey").value = "";
+    document.getElementById("openaiKey").value = "";
     document.getElementById("alertContainer").innerHTML = "";
     currentQuestionIndex = 0;
     totalQuestions = 30;
