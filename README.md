@@ -18,7 +18,7 @@ An intelligent interview preparation platform that generates personalized techni
 
 ## 🚀 Live Demo
 
-[**Try the live application**](https://your-app-name.onrender.com) *(Replace with your actual Render URL)*
+[**Try the live application**](https://ai-interview-mcq-based-agent.onrender.com/) *(Replace with your actual Render URL)*
 
 ## 🛠️ Technologies Used
 
