@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Interview (MCQ-based) Agent</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+    
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+    
+    h1 {
+      text-align: center;
+      color: #2d3748;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    h2 {
+      color: #4a5568;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    h3 {
+      color: #4a5568;
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+    }
+    
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #4a5568;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    input[type="file"], input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    input[type="file"]:focus, input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    
+    .backend-selection {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .difficulty-selection {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .backend-option, .difficulty-option {
+      flex: 1;
+      position: relative;
+    }
+    
+    .backend-option input[type="radio"], .difficulty-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .backend-label, .difficulty-label {
+      display: block;
+      padding: 15px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      color: #4a5568;
+      background: white;
+    }
+    
+    .difficulty-label {
+      padding: 12px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .difficulty-label small {
+      font-size: 0.75rem;
+      font-weight: normal;
+      color: #718096;
+      text-align: center;
+    }
+    
+    .backend-label:hover, .difficulty-label:hover {
+      border-color: #667eea;
+      background: #f7fafc;
+    }
+    
+    .backend-option input[type="radio"]:checked + .backend-label,
+    .difficulty-option input[type="radio"]:checked + .difficulty-label {
+      color: white;
+      border-color: #667eea;
+    }
+    
+    .backend-option input[type="radio"]:checked + .backend-label {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .difficulty-option input[type="radio"]:checked + .difficulty-label.easy {
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      border-color: #48bb78;
+    }
+    
+    .difficulty-option input[type="radio"]:checked + .difficulty-label.moderate {
+      background: linear-gradient(135deg, #ed8936, #dd6b20);
+      border-color: #ed8936;
+    }
+    
+    .difficulty-option input[type="radio"]:checked + .difficulty-label.hard {
+      background: linear-gradient(135deg, #f56565, #e53e3e);
+      border-color: #f56565;
+    }
+    
+    .api-key-group {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f7fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .api-key-group.hidden {
+      display: none;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .question-card {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+      margin-bottom: 20px;
+    }
+    
+    .score-display {
+      display: flex;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    
+    .score-item {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      background: #f7fafc;
+      border-radius: 10px;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .score-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+      display: block;
+    }
+    
+    .score-label {
+      color: #4a5568;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+    
+    .feedback {
+      background: #e6fffa;
+      border: 1px solid #81e6d9;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+    
+    .feedback.positive {
+      background: #f0fff4;
+      border-color: #68d391;
+    }
+    
+    .feedback.negative {
+      background: #fed7d7;
+      border-color: #fc8181;
+    }
+    
+    .mcq-options {
+      margin-top: 20px;
+    }
+    
+    .mcq-option {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 15px 20px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .mcq-option:hover {
+      border-color: #667eea;
+      background: #f7fafc;
+    }
+    
+    .mcq-option.selected {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-color: #667eea;
+    }
+    
+    .mcq-option.correct {
+      background: #c6f6d5;
+      border-color: #68d391;
+      color: #22543d;
+    }
+    
+    .mcq-option.incorrect {
+      background: #fed7d7;
+      border-color: #fc8181;
+      color: #c53030;
+    }
+    
+    .mcq-option.correct-answer {
+      background: #bee3f8;
+      border-color: #63b3ed;
+      color: #2c5aa0;
+    }
+    
+    .option-label {
+      font-weight: bold;
+      font-size: 1.1rem;
+      min-width: 30px;
+      height: 30px;
+      background: #e2e8f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4a5568;
+    }
+    
+    .mcq-option.selected .option-label {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+    
+    .mcq-option.correct .option-label,
+    .mcq-option.incorrect .option-label,
+    .mcq-option.correct-answer .option-label {
+      background: rgba(255, 255, 255, 0.8);
+    }
+    
+    .option-text {
+      flex: 1;
+      font-size: 1rem;
+    }
+    
+    .results-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .summary-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .summary-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+      display: block;
+    }
+    
+    .history-item {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .question-result {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .result-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .result-badge.correct {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+    
+    .result-badge.incorrect {
+      background: #fed7d7;
+      color: #c53030;
+    }
+    
+    .interview-header {
+      margin-bottom: 20px;
+    }
+    
+    .timer-difficulty-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      padding: 15px 20px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .timer-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #2d3748;
+    }
+    
+    .timer-display.warning {
+      color: #ed8936;
+    }
+    
+    .timer-display.danger {
+      color: #e53e3e;
+      animation: pulse 1s infinite;
+    }
+    
+    .difficulty-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .difficulty-badge.easy {
+      background: linear-gradient(135deg, #48bb78, #38a169);
+    }
+    
+    .difficulty-badge.moderate {
+      background: linear-gradient(135deg, #ed8936, #dd6b20);
+    }
+    
+    .difficulty-badge.hard {
+      background: linear-gradient(135deg, #f56565, #e53e3e);
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    .topic-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .alert.error {
+      background: #fed7d7;
+      border: 1px solid #fc8181;
+      color: #c53030;
+    }
+    
+    .alert.success {
+      background: #f0fff4;
+      border: 1px solid #68d391;
+      color: #22543d;
+    }
+    
+    .time-up-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .time-up-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    
+    .time-up-content h2 {
+      color: #e53e3e;
+      margin-bottom: 20px;
+    }
+    
+    .time-up-content button {
+      margin-top: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .card {
+        padding: 20px;
+      }
+      
+      .backend-selection {
+        flex-direction: column;
+      }
+      
+      .score-display {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1><i class="fas fa-robot"></i> AI Interview (MCQ-based) Agent</h1>
+    
+    <!-- Upload Stage -->
+    <div id="stage-upload">
+      <h2><i class="fas fa-upload"></i> Setup Interview</h2>
+      
+      <div class="input-group">
+        <label for="resumeFile"><i class="fas fa-file-alt"></i> Upload Resume (.pdf or .txt)</label>
+        <input type="file" id="resumeFile" accept=".pdf,.txt" />
+      </div>
+      
+      <div class="input-group">
+        <label>Choose AI Backend</label>
+        <div class="backend-selection">
+          <div class="backend-option">
+            <input type="radio" name="backend" value="gemini" id="gemini" checked onchange="toggleApiKey()">
+            <label for="gemini" class="backend-label">
+              <i class="fas fa-brain"></i> Gemini
+            </label>
+          </div>
+          <div class="backend-option">
+            <input type="radio" name="backend" value="groq" id="groq" onchange="toggleApiKey()">
+            <label for="groq" class="backend-label">
+              <i class="fas fa-bolt"></i> Groq
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="input-group">
+        <label>Select Difficulty Level</label>
+        <div class="difficulty-selection">
+          <div class="difficulty-option">
+            <input type="radio" name="difficulty" value="easy" id="easy" checked>
+            <label for="easy" class="difficulty-label easy">
+              <i class="fas fa-seedling"></i> Easy
+              <small>Basic concepts and fundamentals</small>
+            </label>
+          </div>
+          <div class="difficulty-option">
+            <input type="radio" name="difficulty" value="moderate" id="moderate">
+            <label for="moderate" class="difficulty-label moderate">
+              <i class="fas fa-chart-line"></i> Moderate
+              <small>Intermediate knowledge required</small>
+            </label>
+          </div>
+          <div class="difficulty-option">
+            <input type="radio" name="difficulty" value="hard" id="hard">
+            <label for="hard" class="difficulty-label hard">
+              <i class="fas fa-fire"></i> Hard
+              <small>Advanced concepts and expertise</small>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div id="gemini-api-key" class="api-key-group">
+        <label for="geminiKey"><i class="fas fa-key"></i> Gemini API Key</label>
+        <input type="password" id="geminiKey" placeholder="Enter your Gemini API key" />
+      </div>
+      
+      <div id="groq-api-key" class="api-key-group hidden">
+        <label for="groqKey"><i class="fas fa-key"></i> Groq API Key</label>
+        <input type="password" id="groqKey" placeholder="Enter your Groq API key" />
+      </div>
+      
+      <button onclick="startInterview()" id="startBtn">
+        <i class="fas fa-play"></i> Start Interview
+      </button>
+      
+      <div id="alertContainer"></div>
+    </div>
+
+    <!-- Interview Stage -->
+    <div id="stage-interview" class="hidden">
+      <div class="interview-header">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="timer-difficulty-container">
+          <div class="timer-display">
+            <i class="fas fa-clock"></i>
+            <span id="timer">10:00</span>
+          </div>
+          <div class="difficulty-badge" id="currentDifficulty">Easy</div>
+        </div>
+      </div>
+      
+      <h2><i class="fas fa-question-circle"></i> Interview in Progress</h2>
+      
+      <div class="question-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <div class="topic-badge" id="currentTopic"></div>
+          <div style="font-size: 0.9rem; color: #666;">
+            Question <span id="questionNumber">1</span> of <span id="totalQuestions">30</span>
+          </div>
+        </div>
+        <h3>Question:</h3>
+        <p id="currentQuestion"></p>
+        
+        <div class="mcq-options" id="mcqOptions">
+          <!-- MCQ options will be populated here -->
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button onclick="submitAnswer()" id="submitBtn" style="flex: 1;">
+          <i class="fas fa-paper-plane"></i> Submit Answer
+        </button>
+        <button onclick="endInterview()" id="endBtn" style="flex: 0 0 auto; background: #e53e3e; width: auto;">
+          <i class="fas fa-stop"></i> End Interview
+        </button>
+      </div>
+      
+      <div class="score-display" id="scoreDisplay" style="display: none;">
+        <div class="score-item">
+          <span class="score-number" id="score">-</span>
+          <div class="score-label">Current Score</div>
+        </div>
+        <div class="score-item">
+          <span class="score-number" id="totalScore">0</span>
+          <div class="score-label">Total Score</div>
+        </div>
+      </div>
+      
+      <div class="feedback hidden" id="feedbackContainer">
+        <strong>Feedback:</strong>
+        <p id="feedback"></p>
+      </div>
+    </div>
+
+    <!-- Complete Stage -->
+    <div id="stage-complete" class="hidden">
+      <h2><i class="fas fa-trophy"></i> Interview Complete!</h2>
+      
+      <div class="score-display">
+        <div class="score-item">
+          <span class="score-number" id="finalScore">0</span>
+          <div class="score-label">Final Score</div>
+        </div>
+      </div>
+      
+      <h3><i class="fas fa-history"></i> Performance Breakdown</h3>
+      <div id="historyContainer"></div>
+      
+      <button onclick="resetInterview()">
+        <i class="fas fa-redo"></i> Start New Interview
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let totalQuestions = 30;
+  let currentQuestionIndex = 0;
+  let selectedAnswer = null;
+  let currentQuestionData = null;
+  let timeRemaining = 600; // 10 minutes in seconds
+  let timerInterval = null;
+  let currentDifficulty = 'easy';
+  
+  function toggleApiKey() {
+    const backend = document.querySelector('input[name="backend"]:checked').value;
+    const geminiGroup = document.getElementById('gemini-api-key');
+    const groqGroup = document.getElementById('groq-api-key');
+    
+    if (backend === 'gemini') {
+      geminiGroup.classList.remove('hidden');
+      groqGroup.classList.add('hidden');
+    } else {
+      geminiGroup.classList.add('hidden');
+      groqGroup.classList.remove('hidden');
+    }
+  }
+  
+  function startTimer() {
+    timeRemaining = 600; // Reset to 10 minutes
+    timerInterval = setInterval(() => {
+      timeRemaining--;
+      updateTimerDisplay();
+      
+      if (timeRemaining <= 0) {
+        timeUp();
+      }
+    }, 1000);
+  }
+  
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+  
+  function updateTimerDisplay() {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    const timerElement = document.getElementById('timer');
+    timerElement.textContent = display;
+    
+    const timerDisplay = document.querySelector('.timer-display');
+    
+    if (timeRemaining <= 60) { // Last minute
+      timerDisplay.classList.add('danger');
+      timerDisplay.classList.remove('warning');
+    } else if (timeRemaining <= 180) { // Last 3 minutes
+      timerDisplay.classList.add('warning');
+      timerDisplay.classList.remove('danger');
+    } else {
+      timerDisplay.classList.remove('warning', 'danger');
+    }
+  }
+  
+  function timeUp() {
+    stopTimer();
+    
+    // Show time up modal
+    const modal = document.createElement('div');
+    modal.className = 'time-up-modal';
+    modal.innerHTML = `
+      <div class="time-up-content">
+        <h2><i class="fas fa-clock"></i> Time's Up!</h2>
+        <p>The 10-minute timer has ended. Your interview will now be completed based on your answered questions.</p>
+        <button onclick="closeTimeUpModal()" id="timeUpBtn">
+          <i class="fas fa-check"></i> View Results
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  
+  function closeTimeUpModal() {
+    const modal = document.querySelector('.time-up-modal');
+    if (modal) {
+      modal.remove();
+    }
+    endInterview(true);
+  }
+  
+  function showAlert(message, type = 'error') {
+    const container = document.getElementById('alertContainer');
+    const alert = document.createElement('div');
+    alert.className = `alert ${type}`;
+    alert.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i> ${message}`;
+    container.innerHTML = '';
+    container.appendChild(alert);
+    
+    if (type === 'success') {
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 3000);
+    }
+  }
+  
+  function setLoading(buttonId, loading) {
+    const button = document.getElementById(buttonId);
+    if (loading) {
+      button.disabled = true;
+      if (buttonId === 'startBtn') {
+        button.innerHTML = `<span class="loading"></span> Processing...`;
+      } else if (buttonId === 'submitBtn') {
+        button.innerHTML = `<span class="loading"></span> Submitting...`;
+      } else if (buttonId === 'endBtn') {
+        button.innerHTML = `<span class="loading"></span> Ending...`;
+      }
+    } else {
+      button.disabled = false;
+      if (buttonId === 'startBtn') {
+        button.innerHTML = '<i class="fas fa-play"></i> Start Interview';
+      } else if (buttonId === 'submitBtn') {
+        button.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Answer';
+      } else if (buttonId === 'endBtn') {
+        button.innerHTML = '<i class="fas fa-stop"></i> End Interview';
+      }
+    }
+  }
+  
+  async function startInterview() {
+    const fileInput = document.getElementById('resumeFile');
+    const backend = document.querySelector('input[name="backend"]:checked').value;
+    const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+    const apiKey = backend === 'gemini' ? 
+      document.getElementById('geminiKey').value : 
+      document.getElementById('groqKey').value;
+    
+    if (!fileInput.files.length) {
+      showAlert("Please select a resume file");
+      return;
+    }
+    
+    if (!apiKey.trim()) {
+      showAlert(`Please enter your ${backend.charAt(0).toUpperCase() + backend.slice(1)} API key`);
+      return;
+    }
+    
+    currentDifficulty = difficulty;
+    setLoading('startBtn', true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('resume_file', fileInput.files[0]);
+      formData.append('backend', backend);
+      formData.append('difficulty', difficulty);
+      formData.append('interview_type', 'mcq');
+      formData.append('api_key', apiKey);
+      
+      const res = await fetch('/start_interview', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        showAlert(data.error);
+        return;
+      }
+      
+      if (!data.topics || !data.topics.length) {
+        showAlert("Could not extract topics from resume. Please try another file.");
+        return;
+      }
+      
+      totalQuestions = 30; // Fixed 30 questions
+      currentQuestionIndex = 0;
+      
+      document.getElementById("stage-upload").classList.add('hidden');
+      document.getElementById("stage-interview").classList.remove('hidden');
+      
+      // Update difficulty badge
+      const difficultyBadge = document.getElementById('currentDifficulty');
+      difficultyBadge.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+      difficultyBadge.className = `difficulty-badge ${difficulty}`;
+      
+      // Start timer
+      startTimer();
+      
+      showAlert("Interview started successfully!", 'success');
+      await nextQuestion();
+      
+    } catch (error) {
+      showAlert("Failed to start interview. Please check your API key and try again.");
+      console.error(error);
+    } finally {
+      setLoading('startBtn', false);
+    }
+  }
+  
+  async function nextQuestion() {
+    try {
+      const res = await fetch('/next_question', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({prev_answer: ''})
+      });
+      
+      const data = await res.json();
+      
+      if (!data.question) {
+        await showFinalScore();
+        return;
+      }
+      
+      currentQuestionIndex++;
+      currentQuestionData = data;
+      selectedAnswer = null;
+      
+      updateProgress();
+      
+      document.getElementById("questionNumber").innerText = currentQuestionIndex;
+      document.getElementById("totalQuestions").innerText = totalQuestions;
+      document.getElementById("currentTopic").innerText = data.topic;
+      document.getElementById("currentQuestion").innerText = data.question;
+      
+      // Populate MCQ options
+      const optionsContainer = document.getElementById("mcqOptions");
+      optionsContainer.innerHTML = "";
+      
+      if (data.options) {
+        data.options.forEach((option, index) => {
+          const optionDiv = document.createElement("div");
+          optionDiv.className = "mcq-option";
+          optionDiv.onclick = () => selectOption(index);
+          optionDiv.innerHTML = `
+            <div class="option-label">${String.fromCharCode(65 + index)}</div>
+            <div class="option-text">${option}</div>
+          `;
+          optionsContainer.appendChild(optionDiv);
+        });
+      }
+      
+      document.getElementById("scoreDisplay").style.display = "none";
+      document.getElementById("feedbackContainer").classList.add('hidden');
+      
+    } catch (error) {
+      showAlert("Failed to load next question. Please try again.");
+      console.error(error);
+    }
+  }
+  
+  function selectOption(index) {
+    // Remove previous selection
+    document.querySelectorAll('.mcq-option').forEach(option => {
+      option.classList.remove('selected');
+    });
+    
+    // Select new option
+    document.querySelectorAll('.mcq-option')[index].classList.add('selected');
+    selectedAnswer = index;
+  }
+  
+  function updateProgress() {
+    const progress = (currentQuestionIndex / totalQuestions) * 100;
+    document.getElementById("progressFill").style.width = progress + "%";
+  }
+  
+  async function endInterview(autoEnd = false) {
+    if (!autoEnd && !confirm("Are you sure you want to end the interview? You'll be scored based on completed answers.")) {
+      return;
+    }
+    
+    stopTimer(); // Stop the timer
+    setLoading('endBtn', true);
+    
+    try {
+      const res = await fetch('/end_interview', {
+        method: 'POST'
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        await showFinalScore();
+      } else {
+        showAlert("Failed to end interview. Please try again.");
+      }
+      
+    } catch (error) {
+      showAlert("Failed to end interview. Please try again.");
+      console.error(error);
+    } finally {
+      setLoading('endBtn', false);
+    }
+  }
+  
+  async function submitAnswer() {
+    if (selectedAnswer === null) {
+      showAlert("Please select an answer");
+      return;
+    }
+    
+    setLoading('submitBtn', true);
+    
+    try {
+      const res = await fetch('/submit_mcq', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({
+          selected_answer: selectedAnswer
+        })
+      });
+      
+      const data = await res.json();
+      
+      // Show correct/incorrect feedback
+      const options = document.querySelectorAll('.mcq-option');
+      options.forEach((option, index) => {
+        if (index === data.correct_answer) {
+          option.classList.add('correct-answer');
+        }
+        if (index === selectedAnswer) {
+          if (data.is_correct) {
+            option.classList.add('correct');
+          } else {
+            option.classList.add('incorrect');
+          }
+        }
+        option.onclick = null; // Disable further selection
+      });
+      
+      document.getElementById("score").innerText = data.is_correct ? "10" : "0";
+      document.getElementById("totalScore").innerText = data.total_score;
+      document.getElementById("feedback").innerText = data.explanation;
+      
+      document.getElementById("scoreDisplay").style.display = "flex";
+      const feedbackContainer = document.getElementById("feedbackContainer");
+      feedbackContainer.classList.remove('hidden');
+      
+      // Add color coding based on correctness
+      if (data.is_correct) {
+        feedbackContainer.className = "feedback positive";
+      } else {
+        feedbackContainer.className = "feedback negative";
+      }
+      
+      setTimeout(() => nextQuestion(), 3000);
+      
+    } catch (error) {
+      showAlert("Failed to submit answer. Please try again.");
+      console.error(error);
+    } finally {
+      setLoading('submitBtn', false);
+    }
+  }
+  
+  async function showFinalScore() {
+    stopTimer(); // Make sure timer is stopped
+    
+    try {
+      const res = await fetch('/final_score');
+      const data = await res.json();
+      
+      document.getElementById("stage-interview").classList.add('hidden');
+      document.getElementById("stage-complete").classList.remove('hidden');
+      document.getElementById("finalScore").innerText = data.final_score;
+      
+      const historyContainer = document.getElementById("historyContainer");
+      historyContainer.innerHTML = "";
+      
+      // Show completion message
+      if (data.completed_early || timeRemaining <= 0) {
+        const earlyMessage = document.createElement("div");
+        earlyMessage.className = "alert success";
+        const reason = timeRemaining <= 0 ? "time limit reached" : "ended early";
+        earlyMessage.innerHTML = `<i class="fas fa-info-circle"></i> Interview completed (${reason}). Scored based on ${data.questions_answered} answered questions.`;
+        historyContainer.appendChild(earlyMessage);
+      }
+      
+      // Show summary stats
+      const summaryDiv = document.createElement("div");
+      summaryDiv.className = "results-summary";
+      summaryDiv.innerHTML = `
+        <div class="summary-card">
+          <span class="summary-number">${data.questions_answered}</span>
+          <div class="score-label">Questions Answered</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-number">${data.average_score}</span>
+          <div class="score-label">Average Score</div>
+        </div>
+      `;
+      historyContainer.appendChild(summaryDiv);
+      
+      // Show detailed history
+      if (data.history && data.history.length > 0) {
+        data.history.forEach((item, index) => {
+          const historyItem = document.createElement("div");
+          historyItem.className = "history-item";
+          
+          const isCorrect = item.is_correct || item.score >= 5;
+          const badgeClass = isCorrect ? 'correct' : 'incorrect';
+          const badgeText = isCorrect ? 'Correct' : 'Incorrect';
+          
+          historyItem.innerHTML = `
+            <div class="question-result">
+              <div class="topic-badge">${item.topic}</div>
+              <div class="result-badge ${badgeClass}">${badgeText}</div>
+            </div>
+            <div style="margin-bottom: 10px;"><strong>Question:</strong> ${item.question || 'Question not available'}</div>
+            <div style="margin-bottom: 10px;"><strong>Your Answer:</strong> ${item.selected_answer !== undefined ? String.fromCharCode(65 + item.selected_answer) : item.answer || 'No answer'}</div>
+            ${item.correct_answer !== undefined ? `<div style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${String.fromCharCode(65 + item.correct_answer)}</div>` : ''}
+            <div class="score-display" style="margin-top: 10px;">
+              <div class="score-item">
+                <span class="score-number" style="font-size: 1.2rem;">${item.score || 0}/10</span>
+                <div class="score-label">Score</div>
+              </div>
+            </div>
+            <div style="margin-top: 10px;"><strong>Explanation:</strong> ${item.explanation || item.feedback || 'No explanation available'}</div>
+          `;
+          historyContainer.appendChild(historyItem);
+        });
+      }
+      
+    } catch (error) {
+      showAlert("Failed to load final score. Please refresh the page.");
+      console.error(error);
+    }
+  }
+  
+  function resetInterview() {
+    stopTimer(); // Stop any running timer
+    document.getElementById("stage-complete").classList.add('hidden');
+    document.getElementById("stage-upload").classList.remove('hidden');
+    document.getElementById("resumeFile").value = "";
+    document.getElementById("geminiKey").value = "";
+    document.getElementById("groqKey").value = "";
+    document.getElementById("alertContainer").innerHTML = "";
+    currentQuestionIndex = 0;
+    totalQuestions = 30;
+    selectedAnswer = null;
+    currentQuestionData = null;
+    timeRemaining = 600;
+    currentDifficulty = 'easy';
+  }
+  
+  // Initialize
+  toggleApiKey();
+</script>
+</body>
+</html>
