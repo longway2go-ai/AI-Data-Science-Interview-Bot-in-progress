@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
 from groq import Groq
+import openai  # New import for OpenAI
 import speech_recognition as sr
 import pyttsx3
 import tempfile
@@ -34,6 +35,7 @@ class InterviewState:
         self.backend = "gemini"
         self.gemini_api_key = ""
         self.groq_api_key = ""
+        self.openai_api_key = ""  # New for OpenAI
         self.total_questions = 30
         self.questions_answered = 0
         self.interview_ended_early = False
@@ -59,7 +61,7 @@ state = InterviewState()
 def gemini_query(prompt, api_key):
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
@@ -76,16 +78,37 @@ def groq_query(prompt, api_key):
     except Exception as e:
         raise Exception(f"Groq API Error: {str(e)}")
 
+def openai_query(prompt, api_key):
+    try:
+        client = openai.OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Using the more affordable model
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=512
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        raise Exception(f"OpenAI API Error: {str(e)}")
+
 def llm_query(prompt, backend="gemini"):
-    api_key = state.gemini_api_key if backend == "gemini" else state.groq_api_key
-    
-    if not api_key:
-        raise Exception("API key not configured")
-    
     if backend == "gemini":
+        api_key = state.gemini_api_key
+        if not api_key:
+            raise Exception("Gemini API key not configured")
         return gemini_query(prompt, api_key)
-    else:
+    elif backend == "groq":
+        api_key = state.groq_api_key
+        if not api_key:
+            raise Exception("Groq API key not configured")
         return groq_query(prompt, api_key)
+    elif backend == "openai":
+        api_key = state.openai_api_key
+        if not api_key:
+            raise Exception("OpenAI API key not configured")
+        return openai_query(prompt, api_key)
+    else:
+        raise Exception(f"Unsupported backend: {backend}")
 
 # ==== File text extraction ====
 def extract_text_from_file(file: UploadFile) -> str:
@@ -242,11 +265,15 @@ async def start_interview(
         if not api_key or len(api_key.strip()) < 10:
             return JSONResponse({"error": "Please provide a valid API key."}, status_code=400)
         
-        # Store API key for this session
+        # Store API key for this session based on backend
         if backend == "gemini":
             state.gemini_api_key = api_key.strip()
-        else:
+        elif backend == "groq":
             state.groq_api_key = api_key.strip()
+        elif backend == "openai":
+            state.openai_api_key = api_key.strip()
+        else:
+            return JSONResponse({"error": "Invalid backend selected."}, status_code=400)
         
         # Extract resume text
         resume_text = extract_text_from_file(resume_file)
@@ -258,6 +285,14 @@ async def start_interview(
         state.topics = extract_resume_topics(resume_text, backend)
         state.backend = backend
         state.difficulty = difficulty
+        
+        # Re-store the API key after reset
+        if backend == "gemini":
+            state.gemini_api_key = api_key.strip()
+        elif backend == "groq":
+            state.groq_api_key = api_key.strip()
+        elif backend == "openai":
+            state.openai_api_key = api_key.strip()
         
         if not state.topics:
             return JSONResponse({"error": "Could not extract topics from resume. Please try a different file."}, status_code=400)
