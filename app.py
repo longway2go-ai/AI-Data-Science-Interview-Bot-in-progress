@@ -61,7 +61,7 @@ state = InterviewState()
 def gemini_query(prompt, api_key):
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
