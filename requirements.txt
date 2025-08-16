@@ -3,7 +3,7 @@ uvicorn
 jinja2
 google-generativeai
 groq
-speech-recognition
+speechrecognition
 pyttsx3
 pydantic
 PyPDF2
