@@ -590,7 +590,7 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1><i class="fas fa-robot"></i> AI Interview Agent</h1>
+    <h1><i class="fas fa-robot"></i> AI Resume-Based Interview Agent</h1>
     
     <!-- Upload Stage -->
     <div id="stage-upload">
@@ -696,7 +696,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <div class="topic-badge" id="currentTopic"></div>
           <div style="font-size: 0.9rem; color: #666;">
-            Question <span id="questionNumber">1</span> of <span id="totalQuestions">30</span>
+            Question <span id="questionNumber">1</span> of <span id="totalQuestions">40</span>
           </div>
         </div>
         <h3>Question:</h3>
@@ -755,7 +755,7 @@
 </div>
 
 <script>
-  let totalQuestions = 30;
+  let totalQuestions = 40;
   let currentQuestionIndex = 0;
   let selectedAnswer = null;
   let currentQuestionData = null;
@@ -940,7 +940,7 @@
         return;
       }
       
-      totalQuestions = 30; // Fixed 30 questions
+      totalQuestions = 40; // Fixed 30 questions
       currentQuestionIndex = 0;
       
       document.getElementById("stage-upload").classList.add('hidden');
@@ -1206,7 +1206,7 @@
     document.getElementById("openaiKey").value = "";
     document.getElementById("alertContainer").innerHTML = "";
     currentQuestionIndex = 0;
-    totalQuestions = 30;
+    totalQuestions = 40;
     selectedAnswer = null;
     currentQuestionData = null;
     timeRemaining = 600;
