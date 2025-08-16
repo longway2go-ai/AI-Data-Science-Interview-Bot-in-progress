@@ -298,7 +298,7 @@ async def start_interview(
             return JSONResponse({"error": "Could not extract topics from resume. Please try a different file."}, status_code=400)
         
         # Set total questions but don't pre-generate them
-        state.total_questions = 30
+        state.total_questions = 40
         
         return JSONResponse({
             "topics": state.topics, 
