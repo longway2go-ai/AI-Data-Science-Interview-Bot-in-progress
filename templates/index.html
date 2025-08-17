@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Interview Agent</title>
+  <title>AI Document Quiz Agent</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     * {
@@ -81,7 +81,7 @@
       font-size: 0.9rem;
     }
     
-    input[type="file"], input[type="text"], input[type="password"], textarea {
+    input[type="file"], input[type="text"], input[type="password"], textarea, select {
       width: 100%;
       padding: 12px 16px;
       border: 2px solid #e2e8f0;
@@ -91,10 +91,14 @@
       background: white;
     }
     
-    input[type="file"]:focus, input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+    input[type="file"]:focus, input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    select {
+      cursor: pointer;
     }
     
     textarea {
@@ -114,19 +118,26 @@
       margin-bottom: 20px;
     }
     
-    .backend-option, .difficulty-option {
+    .document-type-selection {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .backend-option, .difficulty-option, .document-type-option {
       flex: 1;
       position: relative;
     }
     
-    .backend-option input[type="radio"], .difficulty-option input[type="radio"] {
+    .backend-option input[type="radio"], .difficulty-option input[type="radio"], .document-type-option input[type="radio"] {
       position: absolute;
       opacity: 0;
       width: 0;
       height: 0;
     }
     
-    .backend-label, .difficulty-label {
+    .backend-label, .difficulty-label, .document-type-label {
       display: block;
       padding: 15px 20px;
       border: 2px solid #e2e8f0;
@@ -137,6 +148,28 @@
       font-weight: 600;
       color: #4a5568;
       background: white;
+    }
+    
+    .document-type-label {
+      padding: 20px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-height: 120px;
+    }
+    
+    .document-type-label i {
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+    
+    .document-type-label small {
+      font-size: 0.75rem;
+      font-weight: normal;
+      color: #718096;
+      text-align: center;
+      line-height: 1.3;
     }
     
     .difficulty-label {
@@ -154,18 +187,20 @@
       text-align: center;
     }
     
-    .backend-label:hover, .difficulty-label:hover {
+    .backend-label:hover, .difficulty-label:hover, .document-type-label:hover {
       border-color: #667eea;
       background: #f7fafc;
     }
     
     .backend-option input[type="radio"]:checked + .backend-label,
-    .difficulty-option input[type="radio"]:checked + .difficulty-label {
+    .difficulty-option input[type="radio"]:checked + .difficulty-label,
+    .document-type-option input[type="radio"]:checked + .document-type-label {
       color: white;
       border-color: #667eea;
     }
     
-    .backend-option input[type="radio"]:checked + .backend-label {
+    .backend-option input[type="radio"]:checked + .backend-label,
+    .document-type-option input[type="radio"]:checked + .document-type-label {
       background: linear-gradient(135deg, #667eea, #764ba2);
     }
     
@@ -418,7 +453,7 @@
       color: #c53030;
     }
     
-    .interview-header {
+    .quiz-header {
       margin-bottom: 20px;
     }
     
@@ -581,6 +616,10 @@
         flex-direction: column;
       }
       
+      .document-type-selection {
+        grid-template-columns: 1fr;
+      }
+      
       .score-display {
         flex-direction: column;
       }
@@ -590,15 +629,45 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1><i class="fas fa-robot"></i> AI Resume-Based Interview Agent</h1>
+    <h1><i class="fas fa-brain"></i> AI Document Quiz Agent</h1>
     
     <!-- Upload Stage -->
     <div id="stage-upload">
-      <h2><i class="fas fa-upload"></i> Setup Interview</h2>
+      <h2><i class="fas fa-upload"></i> Setup Quiz</h2>
       
       <div class="input-group">
-        <label for="resumeFile"><i class="fas fa-file-alt"></i> Upload Resume (.pdf or .txt)</label>
-        <input type="file" id="resumeFile" accept=".pdf,.txt" />
+        <label for="documentFile"><i class="fas fa-file-alt"></i> Upload Document (.pdf or .txt)</label>
+        <input type="file" id="documentFile" accept=".pdf,.txt" />
+      </div>
+      
+      <div class="input-group">
+        <label>Choose Document Type</label>
+        <div class="document-type-selection">
+          <div class="document-type-option">
+            <input type="radio" name="document_type" value="resume" id="resume" checked>
+            <label for="resume" class="document-type-label">
+              <i class="fas fa-user-tie"></i>
+              <strong>Resume/CV</strong>
+              <small>Interview questions based on your professional experience and skills</small>
+            </label>
+          </div>
+          <div class="document-type-option">
+            <input type="radio" name="document_type" value="research_paper" id="research_paper">
+            <label for="research_paper" class="document-type-label">
+              <i class="fas fa-microscope"></i>
+              <strong>Research Paper</strong>
+              <small>Questions on methodologies, findings, and research concepts</small>
+            </label>
+          </div>
+          <div class="document-type-option">
+            <input type="radio" name="document_type" value="technical_document" id="technical_document">
+            <label for="technical_document" class="document-type-label">
+              <i class="fas fa-cogs"></i>
+              <strong>Technical Document</strong>
+              <small>Questions on technical processes, tools, and implementations</small>
+            </label>
+          </div>
+        </div>
       </div>
       
       <div class="input-group">
@@ -667,16 +736,16 @@
         <input type="password" id="openaiKey" placeholder="Enter your OpenAI API key (sk-...)" />
       </div>
       
-      <button onclick="startInterview()" id="startBtn">
-        <i class="fas fa-play"></i> Start Interview
+      <button onclick="startQuiz()" id="startBtn">
+        <i class="fas fa-play"></i> Start Quiz
       </button>
       
       <div id="alertContainer"></div>
     </div>
 
-    <!-- Interview Stage -->
-    <div id="stage-interview" class="hidden">
-      <div class="interview-header">
+    <!-- Quiz Stage -->
+    <div id="stage-quiz" class="hidden">
+      <div class="quiz-header">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
@@ -690,7 +759,7 @@
         </div>
       </div>
       
-      <h2><i class="fas fa-question-circle"></i> Interview in Progress</h2>
+      <h2><i class="fas fa-question-circle"></i> Quiz in Progress</h2>
       
       <div class="question-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -711,8 +780,8 @@
         <button onclick="submitAnswer()" id="submitBtn" style="flex: 1;">
           <i class="fas fa-paper-plane"></i> Submit Answer
         </button>
-        <button onclick="endInterview()" id="endBtn" style="flex: 0 0 auto; background: #e53e3e; width: auto;">
-          <i class="fas fa-stop"></i> End Interview
+        <button onclick="endQuiz()" id="endBtn" style="flex: 0 0 auto; background: #e53e3e; width: auto;">
+          <i class="fas fa-stop"></i> End Quiz
         </button>
       </div>
       
@@ -723,7 +792,7 @@
         </div>
         <div class="score-item">
           <span class="score-number" id="totalScore">0</span>
-          <div class="score-label">Total Score</div>
+          <div class="score-label">Total Score (out of 40)</div>
         </div>
       </div>
       
@@ -735,20 +804,24 @@
 
     <!-- Complete Stage -->
     <div id="stage-complete" class="hidden">
-      <h2><i class="fas fa-trophy"></i> Interview Complete!</h2>
+      <h2><i class="fas fa-trophy"></i> Quiz Complete!</h2>
       
       <div class="score-display">
         <div class="score-item">
           <span class="score-number" id="finalScore">0</span>
-          <div class="score-label">Final Score</div>
+          <div class="score-label">Final Score (out of 40)</div>
+        </div>
+        <div class="score-item">
+          <span class="score-number" id="percentageScore">0%</span>
+          <div class="score-label">Percentage</div>
         </div>
       </div>
       
       <h3><i class="fas fa-history"></i> Performance Breakdown</h3>
       <div id="historyContainer"></div>
       
-      <button onclick="resetInterview()">
-        <i class="fas fa-redo"></i> Start New Interview
+      <button onclick="resetQuiz()">
+        <i class="fas fa-redo"></i> Start New Quiz
       </button>
     </div>
   </div>
@@ -762,6 +835,7 @@
   let timeRemaining = 600; // 10 minutes in seconds
   let timerInterval = null;
   let currentDifficulty = 'easy';
+  let currentDocumentType = 'resume';
   
   function toggleApiKey() {
     const backend = document.querySelector('input[name="backend"]:checked').value;
@@ -833,7 +907,7 @@
     modal.innerHTML = `
       <div class="time-up-content">
         <h2><i class="fas fa-clock"></i> Time's Up!</h2>
-        <p>The 10-minute timer has ended. Your interview will now be completed based on your answered questions.</p>
+        <p>The 10-minute timer has ended. Your quiz will now be completed based on your answered questions.</p>
         <button onclick="closeTimeUpModal()" id="timeUpBtn">
           <i class="fas fa-check"></i> View Results
         </button>
@@ -847,7 +921,7 @@
     if (modal) {
       modal.remove();
     }
-    endInterview(true);
+    endQuiz(true);
   }
   
   function showAlert(message, type = 'error') {
@@ -879,19 +953,20 @@
     } else {
       button.disabled = false;
       if (buttonId === 'startBtn') {
-        button.innerHTML = '<i class="fas fa-play"></i> Start Interview';
+        button.innerHTML = '<i class="fas fa-play"></i> Start Quiz';
       } else if (buttonId === 'submitBtn') {
         button.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Answer';
       } else if (buttonId === 'endBtn') {
-        button.innerHTML = '<i class="fas fa-stop"></i> End Interview';
+        button.innerHTML = '<i class="fas fa-stop"></i> End Quiz';
       }
     }
   }
   
-  async function startInterview() {
-    const fileInput = document.getElementById('resumeFile');
+  async function startQuiz() {
+    const fileInput = document.getElementById('documentFile');
     const backend = document.querySelector('input[name="backend"]:checked').value;
     const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+    const documentType = document.querySelector('input[name="document_type"]:checked').value;
     
     let apiKey;
     if (backend === 'gemini') {
@@ -903,7 +978,7 @@
     }
     
     if (!fileInput.files.length) {
-      showAlert("Please select a resume file");
+      showAlert("Please select a document file");
       return;
     }
     
@@ -913,17 +988,19 @@
     }
     
     currentDifficulty = difficulty;
+    currentDocumentType = documentType;
     setLoading('startBtn', true);
     
     try {
       const formData = new FormData();
-      formData.append('resume_file', fileInput.files[0]);
+      formData.append('document_file', fileInput.files[0]);
       formData.append('backend', backend);
       formData.append('difficulty', difficulty);
-      formData.append('interview_type', 'mcq');
+      formData.append('document_type', documentType);
+      formData.append('quiz_type', 'mcq');
       formData.append('api_key', apiKey);
       
-      const res = await fetch('/start_interview', {
+      const res = await fetch('/start_quiz', {
         method: 'POST',
         body: formData
       });
@@ -936,29 +1013,36 @@
       }
       
       if (!data.topics || !data.topics.length) {
-        showAlert("Could not extract topics from resume. Please try another file.");
+        showAlert("Could not extract topics from document. Please try another file.");
         return;
       }
       
-      totalQuestions = 40; // Fixed 30 questions
+      totalQuestions = 40;
       currentQuestionIndex = 0;
       
       document.getElementById("stage-upload").classList.add('hidden');
-      document.getElementById("stage-interview").classList.remove('hidden');
+      document.getElementById("stage-quiz").classList.remove('hidden');
       
       // Update difficulty badge
       const difficultyBadge = document.getElementById('currentDifficulty');
       difficultyBadge.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
       difficultyBadge.className = `difficulty-badge ${difficulty}`;
       
+      // Update document type display
+      const documentTypeNames = {
+        'resume': 'Resume/CV',
+        'research_paper': 'Research Paper',
+        'technical_document': 'Technical Document'
+      };
+      
       // Start timer
       startTimer();
       
-      showAlert("Interview started successfully!", 'success');
+      showAlert(`Quiz started successfully! Questions will be generated based on your ${documentTypeNames[documentType]}.`, 'success');
       await nextQuestion();
       
     } catch (error) {
-      showAlert("Failed to start interview. Please check your API key and try again.");
+      showAlert("Failed to start quiz. Please check your API key and try again.");
       console.error(error);
     } finally {
       setLoading('startBtn', false);
@@ -1033,8 +1117,8 @@
     document.getElementById("progressFill").style.width = progress + "%";
   }
   
-  async function endInterview(autoEnd = false) {
-    if (!autoEnd && !confirm("Are you sure you want to end the interview? You'll be scored based on completed answers.")) {
+  async function endQuiz(autoEnd = false) {
+    if (!autoEnd && !confirm("Are you sure you want to end the quiz? You'll be scored based on completed answers.")) {
       return;
     }
     
@@ -1042,7 +1126,7 @@
     setLoading('endBtn', true);
     
     try {
-      const res = await fetch('/end_interview', {
+      const res = await fetch('/end_quiz', {
         method: 'POST'
       });
       
@@ -1051,11 +1135,11 @@
       if (data.success) {
         await showFinalScore();
       } else {
-        showAlert("Failed to end interview. Please try again.");
+        showAlert("Failed to end quiz. Please try again.");
       }
       
     } catch (error) {
-      showAlert("Failed to end interview. Please try again.");
+      showAlert("Failed to end quiz. Please try again.");
       console.error(error);
     } finally {
       setLoading('endBtn', false);
@@ -1097,8 +1181,8 @@
         option.onclick = null; // Disable further selection
       });
       
-      document.getElementById("score").innerText = data.is_correct ? "10" : "0";
-      document.getElementById("totalScore").innerText = data.total_score;
+      document.getElementById("score").innerText = data.is_correct ? "1" : "0";
+      document.getElementById("totalScore").innerText = `${data.total_score}/40`;
       document.getElementById("feedback").innerText = data.explanation;
       
       document.getElementById("scoreDisplay").style.display = "flex";
@@ -1129,9 +1213,10 @@
       const res = await fetch('/final_score');
       const data = await res.json();
       
-      document.getElementById("stage-interview").classList.add('hidden');
+      document.getElementById("stage-quiz").classList.add('hidden');
       document.getElementById("stage-complete").classList.remove('hidden');
-      document.getElementById("finalScore").innerText = data.final_score;
+      document.getElementById("finalScore").innerText = `${data.final_score}/40`;
+      document.getElementById("percentageScore").innerText = `${data.percentage_score}%`;
       
       const historyContainer = document.getElementById("historyContainer");
       historyContainer.innerHTML = "";
@@ -1141,11 +1226,17 @@
         const earlyMessage = document.createElement("div");
         earlyMessage.className = "alert success";
         const reason = timeRemaining <= 0 ? "time limit reached" : "ended early";
-        earlyMessage.innerHTML = `<i class="fas fa-info-circle"></i> Interview completed (${reason}). Scored based on ${data.questions_answered} answered questions.`;
+        earlyMessage.innerHTML = `<i class="fas fa-info-circle"></i> Quiz completed (${reason}). Scored based on ${data.questions_answered} answered questions.`;
         historyContainer.appendChild(earlyMessage);
       }
       
       // Show summary stats
+      const documentTypeNames = {
+        'resume': 'Resume/CV',
+        'research_paper': 'Research Paper',
+        'technical_document': 'Technical Document'
+      };
+
       const summaryDiv = document.createElement("div");
       summaryDiv.className = "results-summary";
       summaryDiv.innerHTML = `
@@ -1154,8 +1245,16 @@
           <div class="score-label">Questions Answered</div>
         </div>
         <div class="summary-card">
-          <span class="summary-number">${data.average_score}</span>
-          <div class="score-label">Average Score</div>
+          <span class="summary-number">${data.final_score}</span>
+          <div class="score-label">Correct Answers</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-number">${data.percentage_score}%</span>
+          <div class="score-label">Success Rate</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-number">${documentTypeNames[data.document_type] || data.document_type}</span>
+          <div class="score-label">Document Type</div>
         </div>
       `;
       historyContainer.appendChild(summaryDiv);
@@ -1166,7 +1265,7 @@
           const historyItem = document.createElement("div");
           historyItem.className = "history-item";
           
-          const isCorrect = item.is_correct || item.score >= 5;
+          const isCorrect = item.is_correct || item.score >= 1;
           const badgeClass = isCorrect ? 'correct' : 'incorrect';
           const badgeText = isCorrect ? 'Correct' : 'Incorrect';
           
@@ -1180,7 +1279,7 @@
             ${item.correct_answer !== undefined ? `<div style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${String.fromCharCode(65 + item.correct_answer)}</div>` : ''}
             <div class="score-display" style="margin-top: 10px;">
               <div class="score-item">
-                <span class="score-number" style="font-size: 1.2rem;">${item.score || 0}/10</span>
+                <span class="score-number" style="font-size: 1.2rem;">${item.score || 0}/1</span>
                 <div class="score-label">Score</div>
               </div>
             </div>
@@ -1196,11 +1295,11 @@
     }
   }
   
-  function resetInterview() {
+  function resetQuiz() {
     stopTimer(); // Stop any running timer
     document.getElementById("stage-complete").classList.add('hidden');
     document.getElementById("stage-upload").classList.remove('hidden');
-    document.getElementById("resumeFile").value = "";
+    document.getElementById("documentFile").value = "";
     document.getElementById("geminiKey").value = "";
     document.getElementById("groqKey").value = "";
     document.getElementById("openaiKey").value = "";
@@ -1211,6 +1310,13 @@
     currentQuestionData = null;
     timeRemaining = 600;
     currentDifficulty = 'easy';
+    currentDocumentType = 'resume';
+    
+    // Reset radio buttons
+    document.getElementById('resume').checked = true;
+    document.getElementById('gemini').checked = true;
+    document.getElementById('easy').checked = true;
+    toggleApiKey();
   }
   
   // Initialize
