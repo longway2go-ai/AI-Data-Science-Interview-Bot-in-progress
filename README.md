@@ -1,4 +1,4 @@
-# 🤖 AI Resume Based Interview Agent
+# 🤖 AI MCQ Based Quiz Agent
 
 An intelligent interview preparation platform that generates personalized technical questions based on your resume using AI. Practice with multiple-choice questions tailored to your skills and experience level.
 
@@ -53,7 +53,7 @@ An intelligent interview preparation platform that generates personalized techni
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ai-interview-agent.git
+   git clone https://github.com/longway2go-ai/ai-interview-agent.git
    cd ai-interview-agent
    ```
 2. **Create virtual environment**
@@ -212,6 +212,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ⭐ **Star this repository if you found it helpful!**
 
-🐛 **Found a bug?** [Report it here](https://github.com/yourusername/ai-interview-agent/issues)
+🐛 **Found a bug?** [Report it here](https://github.com/longway2go-ai/ai-interview-agent/issues)
 
 📧 **Questions?** Feel free to reach out!
