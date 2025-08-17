@@ -11,12 +11,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
 from groq import Groq
-import openai  # New import for OpenAI
+import openai
 import speech_recognition as sr
 import pyttsx3
 import tempfile
 import uvicorn
 from PyPDF2 import PdfReader
+
 
 # ==== Config and Initialization ====
 app = FastAPI()
@@ -25,8 +26,9 @@ if not os.path.exists("static"):
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# ==== Interview State ====
-class InterviewState:
+
+# ==== Quiz State ====
+class QuizState:
     def __init__(self):
         self.topics = []
         self.current_question_index = 0
@@ -35,27 +37,33 @@ class InterviewState:
         self.backend = "gemini"
         self.gemini_api_key = ""
         self.groq_api_key = ""
-        self.openai_api_key = ""  # New for OpenAI
-        self.total_questions = 30
+        self.openai_api_key = ""
+        self.total_questions = 40
         self.questions_answered = 0
-        self.interview_ended_early = False
+        self.quiz_ended_early = False
         self.current_topic = ""
         self.difficulty = "easy"
         self.current_question_data = None
+        self.document_type = "resume"
+        self.document_content = ""
 
     def reset(self):
         self.topics = []
         self.current_question_index = 0
         self.qa_history = []
         self.total_score = 0
-        self.total_questions = 30
+        self.total_questions = 40
         self.questions_answered = 0
-        self.interview_ended_early = False
+        self.quiz_ended_early = False
         self.current_topic = ""
         self.difficulty = "easy"
         self.current_question_data = None
+        self.document_type = "resume"
+        self.document_content = ""
 
-state = InterviewState()
+
+state = QuizState()
+
 
 # ==== LLM Queries ====
 def gemini_query(prompt, api_key):
@@ -66,6 +74,7 @@ def gemini_query(prompt, api_key):
         return response.text.strip()
     except Exception as e:
         raise Exception(f"Gemini API Error: {str(e)}")
+
 
 def groq_query(prompt, api_key):
     try:
@@ -78,11 +87,12 @@ def groq_query(prompt, api_key):
     except Exception as e:
         raise Exception(f"Groq API Error: {str(e)}")
 
+
 def openai_query(prompt, api_key):
     try:
         client = openai.OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Using the more affordable model
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=512
@@ -90,6 +100,7 @@ def openai_query(prompt, api_key):
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise Exception(f"OpenAI API Error: {str(e)}")
+
 
 def llm_query(prompt, backend="gemini"):
     if backend == "gemini":
@@ -109,6 +120,7 @@ def llm_query(prompt, backend="gemini"):
         return openai_query(prompt, api_key)
     else:
         raise Exception(f"Unsupported backend: {backend}")
+
 
 # ==== File text extraction ====
 def extract_text_from_file(file: UploadFile) -> str:
@@ -130,45 +142,120 @@ def extract_text_from_file(file: UploadFile) -> str:
     except Exception as e:
         raise Exception(f"Error reading file: {str(e)}")
 
+
 # ==== Core Functions ====
-def extract_resume_topics(resume_text, backend):
-    prompt = f"""
-    Analyze this resume and extract 8-10 main technical topics, skills, or job roles that would be good for interview questions.
-    Focus on technical skills, programming languages, frameworks, tools, and job responsibilities.
-    Return only a Python list format like: ['Python', 'Machine Learning', 'API Development', 'Database Design']
+def extract_document_topics(document_text, document_type, backend):
+    """Extract topics from any type of document"""
     
-    Resume content:
-    {resume_text[:2000]}...
+    print(f"=== DEBUG: Starting topic extraction ===")
+    print(f"Document type: {document_type}")
+    print(f"Backend: {backend}")
+    print(f"Document length: {len(document_text)} characters")
+    
+    # Fallback topics for the three supported document types
+    fallback_topics = {
+        "resume": ["Technical Skills", "Work Experience", "Education", "Programming Languages", "Frameworks", "Database Management", "Problem Solving", "Project Management"],
+        "research_paper": ["Research Methods", "Data Analysis", "Literature Review", "Methodology", "Statistical Analysis", "Hypothesis Testing", "Results Interpretation", "Academic Writing"],
+        "technical_document": ["System Architecture", "Implementation", "API Design", "Best Practices", "Configuration", "Troubleshooting", "Documentation", "Technical Specifications"]
+    }
+    
+    document_prompts = {
+        "resume": """
+        Analyze this resume and extract 8-10 main technical topics, skills, or job roles that would be good for interview questions.
+        Focus on technical skills, programming languages, frameworks, tools, and job responsibilities.
+        Return only a Python list format like: ['Python', 'Machine Learning', 'API Development', 'Database Design']
+        """,
+        
+        "research_paper": """
+        Analyze this research paper and extract 8-10 main topics, concepts, methodologies, or key findings that would be good for quiz questions.
+        Focus on key research concepts, methodologies, theoretical frameworks, findings, and technical terms.
+        Return only a Python list format like: ['Deep Learning', 'Neural Networks', 'Data Analysis', 'Statistical Methods']
+        """,
+        
+        "technical_document": """
+        Analyze this technical document and extract 8-10 main topics, technologies, or processes that would be good for quiz questions.
+        Focus on technical concepts, procedures, tools, best practices, and implementation details.
+        Return only a Python list format like: ['System Architecture', 'API Design', 'Security Protocols', 'Performance Optimization']
+        """
+    }
+    
+    prompt_template = document_prompts.get(document_type, document_prompts["resume"])
+    
+    prompt = f"""
+    {prompt_template}
+    
+    Document content:
+    {document_text[:3000]}...
+    
+    IMPORTANT: Return ONLY a valid Python list of strings. No explanations or additional text.
+    Example format: ['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5']
     """
     
     try:
+        print("=== DEBUG: Attempting AI query ===")
         topics_text = llm_query(prompt, backend)
+        print(f"=== DEBUG: Raw AI response: {topics_text[:200]}... ===")
+        
         # Try to extract a list from the response
         list_match = re.search(r'\[.*?\]', topics_text, re.DOTALL)
         if list_match:
             try:
-                parsed = eval(list_match.group(0))
-                return parsed[:10]  # Limit to 10 topics max
-            except:
-                pass
+                import ast
+                list_str = list_match.group(0)
+                parsed = ast.literal_eval(list_str)
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    valid_topics = [str(t).strip() for t in parsed if t and len(str(t).strip()) > 2]
+                    if len(valid_topics) >= 3:
+                        print(f"=== DEBUG: Successfully extracted {len(valid_topics)} topics ===")
+                        return valid_topics[:10]
+            except Exception as e:
+                print(f"=== DEBUG: Error parsing list: {e} ===")
         
         # Fallback: split by commas and clean up
-        topics = [t.strip().strip('"\'') for t in topics_text.split(',') if t.strip()]
-        return topics[:10]
+        if ',' in topics_text:
+            topics = []
+            for item in topics_text.split(','):
+                clean_item = item.strip().strip('[]"\'')
+                if clean_item and len(clean_item) > 2:
+                    topics.append(clean_item)
+            
+            if len(topics) >= 3:
+                print(f"=== DEBUG: Fallback parsing worked, got {len(topics)} topics ===")
+                return topics[:10]
+        
+        print("=== DEBUG: AI extraction failed, using fallback topics ===")
         
     except Exception as e:
-        raise Exception(f"Error extracting topics: {str(e)}")
+        print(f"=== DEBUG: AI query failed with error: {str(e)} ===")
+        print("=== DEBUG: Using fallback topics ===")
+    
+    # Return fallback topics
+    fallback = fallback_topics.get(document_type, fallback_topics["resume"])
+    print(f"=== DEBUG: Returning {len(fallback)} fallback topics ===")
+    return fallback
 
-def generate_single_mcq_question(topic, backend, difficulty="easy"):
-    """Generate a single MCQ question on-demand"""
-    difficulty_prompts = {
-        "easy": f"Create a basic multiple choice question about '{topic}' suitable for beginners. Focus on fundamental concepts.",
-        "moderate": f"Create an intermediate multiple choice question about '{topic}' that requires practical knowledge.",
-        "hard": f"Create an advanced multiple choice question about '{topic}' that tests deep expertise."
+
+def generate_single_mcq_question(topic, backend, difficulty="easy", document_type="resume"):
+    """Generate a single MCQ question on-demand based on document type"""
+    
+    difficulty_levels = {
+        "easy": "basic/fundamental",
+        "moderate": "intermediate/practical", 
+        "hard": "advanced/expert"
     }
     
+    document_context = {
+        "resume": f"Create a {difficulty_levels[difficulty]} multiple choice question about '{topic}' suitable for a technical interview. Focus on practical knowledge and real-world applications.",
+        
+        "research_paper": f"Create a {difficulty_levels[difficulty]} multiple choice question about '{topic}' based on research concepts. Focus on methodologies, findings, and theoretical understanding.",
+        
+        "technical_document": f"Create a {difficulty_levels[difficulty]} multiple choice question about '{topic}' focusing on technical implementation. Test practical knowledge and technical expertise."
+    }
+    
+    context_prompt = document_context.get(document_type, document_context["resume"])
+    
     prompt = f"""
-    {difficulty_prompts.get(difficulty, difficulty_prompts["easy"])}
+    {context_prompt}
     
     Return ONLY a JSON object in this exact format:
     {{
@@ -180,6 +267,7 @@ def generate_single_mcq_question(topic, backend, difficulty="easy"):
     
     The correct_answer should be the index (0-3) of the correct option.
     Make sure the incorrect options are plausible but clearly wrong.
+    Ensure the question is relevant to the document type and difficulty level.
     """
     
     try:
@@ -195,45 +283,43 @@ def generate_single_mcq_question(topic, backend, difficulty="easy"):
     
     return None
 
-def create_fallback_question(topic, difficulty):
+
+def create_fallback_question(topic, difficulty, document_type):
     """Create a simple fallback question if AI generation fails"""
-    difficulty_questions = {
-        "easy": {
-            "question": f"What is the primary purpose of {topic}?",
-            "options": [
-                f"To provide essential functionality",
-                f"To complicate the system",
-                f"To reduce performance", 
-                f"To increase errors"
-            ]
+    
+    question_templates = {
+        "resume": {
+            "easy": f"What is the primary purpose of {topic} in software development?",
+            "moderate": f"Which is a best practice when working with {topic}?",
+            "hard": f"What is the most critical consideration when optimizing {topic}?"
         },
-        "moderate": {
-            "question": f"Which is a best practice when working with {topic}?",
-            "options": [
-                f"Following standard conventions",
-                f"Ignoring documentation",
-                f"Using deprecated methods",
-                f"Avoiding error handling"
-            ]
+        "research_paper": {
+            "easy": f"What is {topic} primarily used for in research?",
+            "moderate": f"Which methodology is commonly associated with {topic}?",
+            "hard": f"What are the key limitations of {topic} in current research?"
         },
-        "hard": {
-            "question": f"What is the most critical consideration when optimizing {topic}?",
-            "options": [
-                f"Performance and scalability",
-                f"Code aesthetics only",
-                f"Using the simplest approach",
-                f"Avoiding all optimizations"
-            ]
+        "technical_document": {
+            "easy": f"What is the main function of {topic}?",
+            "moderate": f"How is {topic} typically implemented?",
+            "hard": f"What are the scalability considerations for {topic}?"
         }
     }
     
-    fallback = difficulty_questions.get(difficulty, difficulty_questions["easy"])
+    template = question_templates.get(document_type, question_templates["resume"])
+    question = template.get(difficulty, template["easy"])
+    
     return {
-        "question": fallback["question"],
-        "options": fallback["options"],
+        "question": question,
+        "options": [
+            f"Correct answer related to {topic}",
+            f"Incorrect option 1",
+            f"Incorrect option 2", 
+            f"Incorrect option 3"
+        ],
         "correct_answer": 0,
-        "explanation": f"This tests {difficulty}-level understanding of {topic}."
+        "explanation": f"This tests {difficulty}-level understanding of {topic} in the context of {document_type}."
     }
+
 
 def tts_speak_to_file(text):
     try:
@@ -245,22 +331,30 @@ def tts_speak_to_file(text):
     except Exception as e:
         raise Exception(f"TTS Error: {str(e)}")
 
+
 # ==== Routes ====
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/start_interview")
-async def start_interview(
+
+@app.post("/start_quiz")
+async def start_quiz(
     request: Request, 
     backend: str = Form("gemini"), 
     api_key: str = Form(...),
-    resume_file: UploadFile = File(...),
+    document_file: UploadFile = File(...),
     difficulty: str = Form("easy"),
-    interview_type: str = Form("mcq")
+    document_type: str = Form("resume"),
+    quiz_type: str = Form("mcq")
 ):
     try:
+        # Validate document type
+        valid_types = ["resume", "research_paper", "technical_document"]
+        if document_type not in valid_types:
+            return JSONResponse({"error": f"Invalid document type. Must be one of: {valid_types}"}, status_code=400)
+        
         # Validate API key
         if not api_key or len(api_key.strip()) < 10:
             return JSONResponse({"error": "Please provide a valid API key."}, status_code=400)
@@ -275,14 +369,15 @@ async def start_interview(
         else:
             return JSONResponse({"error": "Invalid backend selected."}, status_code=400)
         
-        # Extract resume text
-        resume_text = extract_text_from_file(resume_file)
-        if not resume_text or len(resume_text.strip()) < 50:
-            return JSONResponse({"error": "Resume file is empty or too short. Please upload a valid resume."}, status_code=400)
+        # Extract document text
+        document_text = extract_text_from_file(document_file)
+        if not document_text or len(document_text.strip()) < 50:
+            return JSONResponse({"error": "Document file is empty or too short. Please upload a valid document."}, status_code=400)
         
         # Extract topics and reset state
         state.reset()
-        state.topics = extract_resume_topics(resume_text, backend)
+        state.document_type = document_type
+        state.document_content = document_text[:5000]
         state.backend = backend
         state.difficulty = difficulty
         
@@ -294,25 +389,37 @@ async def start_interview(
         elif backend == "openai":
             state.openai_api_key = api_key.strip()
         
-        if not state.topics:
-            return JSONResponse({"error": "Could not extract topics from resume. Please try a different file."}, status_code=400)
+        # Try to extract topics with guaranteed fallback
+        try:
+            state.topics = extract_document_topics(document_text, document_type, backend)
+        except Exception as e:
+            print(f"Topic extraction failed: {e}")
+            # Use guaranteed fallback topics
+            fallback_topics = {
+                "resume": ["Technical Skills", "Work Experience", "Problem Solving", "Communication", "Programming", "Database Management", "Web Development", "Project Management"],
+                "research_paper": ["Research Methods", "Data Analysis", "Literature Review", "Hypothesis Testing", "Statistical Analysis", "Methodology", "Results Interpretation", "Academic Writing"],
+                "technical_document": ["System Architecture", "Implementation", "Best Practices", "Configuration", "Troubleshooting", "API Design", "Documentation", "Technical Specifications"]
+            }
+            state.topics = fallback_topics.get(document_type, fallback_topics["resume"])
         
-        # Set total questions but don't pre-generate them
-        state.total_questions = 40
+        if not state.topics:
+            return JSONResponse({"error": "Could not extract topics from document. Please try a different file."}, status_code=400)
         
         return JSONResponse({
             "topics": state.topics, 
-            "interview_type": "mcq",
-            "message": "Interview setup complete! Questions will be generated as you progress."
+            "quiz_type": "mcq",
+            "document_type": document_type,
+            "message": f"Quiz setup complete! Questions will be generated based on your {document_type.replace('_', ' ').title()}."
         })
             
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
 @app.post("/next_question")
 async def next_question(prev_answer: str = Form("")):
     try:
-        # Check if interview is complete
+        # Check if quiz is complete
         if state.current_question_index >= state.total_questions:
             return JSONResponse({"question": None, "topic": None})
         
@@ -324,11 +431,11 @@ async def next_question(prev_answer: str = Form("")):
         state.current_topic = topic
         
         # Generate question on-demand
-        question_data = generate_single_mcq_question(topic, state.backend, state.difficulty)
+        question_data = generate_single_mcq_question(topic, state.backend, state.difficulty, state.document_type)
         
         # If AI generation fails, use fallback
         if not question_data:
-            question_data = create_fallback_question(topic, state.difficulty)
+            question_data = create_fallback_question(topic, state.difficulty, state.document_type)
         
         # Store current question data for scoring
         question_data['topic'] = topic
@@ -339,11 +446,14 @@ async def next_question(prev_answer: str = Form("")):
             "question": question_data["question"],
             "options": question_data["options"],
             "topic": topic,
-            "question_type": "mcq"
+            "question_type": "mcq",
+            "question_number": state.current_question_index + 1,
+            "total_questions": state.total_questions
         })
         
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
 
 @app.post("/submit_mcq")
 async def submit_mcq(selected_answer: int = Form(...)):
@@ -353,7 +463,7 @@ async def submit_mcq(selected_answer: int = Form(...)):
         
         correct_answer = state.current_question_data["correct_answer"]
         is_correct = selected_answer == correct_answer
-        score = 10 if is_correct else 0
+        score = 1 if is_correct else 0
         
         # Store the Q&A in history
         state.qa_history.append({
@@ -376,20 +486,23 @@ async def submit_mcq(selected_answer: int = Form(...)):
             "correct_answer": correct_answer,
             "explanation": state.current_question_data["explanation"],
             "score": score,
-            "total_score": state.total_score
+            "total_score": state.total_score,
+            "max_possible_score": state.total_questions
         })
         
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.post("/end_interview")
-async def end_interview():
-    """End the interview early and mark it as completed"""
+
+@app.post("/end_quiz")
+async def end_quiz():
+    """End the quiz early and mark it as completed"""
     try:
-        state.interview_ended_early = True
+        state.quiz_ended_early = True
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
 
 @app.post("/tts")
 async def tts(text: str = Form("")):
@@ -399,24 +512,27 @@ async def tts(text: str = Form("")):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
 @app.get("/final_score")
 async def final():
     try:
-        # Calculate average score if there are answered questions
-        average_score = 0
+        # Calculate percentage score
+        percentage_score = 0
         if state.questions_answered > 0:
-            average_score = round(state.total_score / state.questions_answered, 2)
+            percentage_score = round((state.total_score / state.questions_answered) * 100, 2)
         
         return JSONResponse({
             "final_score": state.total_score,
-            "average_score": average_score,
-            "total_questions": state.total_questions,
+            "total_possible": state.total_questions,
             "questions_answered": state.questions_answered,
-            "completed_early": state.interview_ended_early,
+            "percentage_score": percentage_score,
+            "completed_early": state.quiz_ended_early,
+            "document_type": state.document_type,
             "history": state.qa_history
         })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
 
 # ==== Run Server ====
 if __name__ == "__main__":
