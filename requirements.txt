@@ -9,3 +9,5 @@ pydantic
 PyPDF2
 openai
 python-multipart
+fpdf2 
+python-dateutil
