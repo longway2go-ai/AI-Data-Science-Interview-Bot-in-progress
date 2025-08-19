@@ -18,7 +18,6 @@ import tempfile
 import uvicorn
 from PyPDF2 import PdfReader
 
-
 # ==== Config and Initialization ====
 app = FastAPI()
 if not os.path.exists("static"):
