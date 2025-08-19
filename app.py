@@ -606,7 +606,6 @@ async def download_results():
             # Handle long questions with text wrapping
             question_text = qa["question"]
             if len(question_text) > 80:
-                # Split long questions into multiple lines
                 words = question_text.split(' ')
                 lines = []
                 current_line = ""
@@ -635,7 +634,6 @@ async def download_results():
             
             for j, option in enumerate(qa["options"]):
                 option_letter = chr(65 + j)
-                # Truncate very long options
                 if len(option) > 70:
                     option = option[:67] + "..."
                 pdf.cell(0, 6, f"   {option_letter}) {option}", 0, 1, 'L')
@@ -689,7 +687,7 @@ async def download_results():
             
             pdf.ln(8)
         
-        # Final Summary Page
+        # Final Summary
         if pdf.get_y() > 200:
             pdf.add_page()
         
@@ -715,13 +713,14 @@ async def download_results():
         
         return FileResponse(
             temp_file.name,
-            media_type="application/pdf",
+            media_type="application/pdf",  # Now this is correct!
             filename=filename,
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
         
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
 
 
 # ==== Run Server ====
