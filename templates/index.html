@@ -602,6 +602,27 @@
     .time-up-content button {
       margin-top: 20px;
     }
+
+    /* Download Button Specific Styles */
+    .download-btn {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      margin: 10px 5px 0 0;
+      width: auto;
+      flex: 0 0 auto;
+    }
+    
+    .download-btn:hover {
+      background: linear-gradient(135deg, #218838, #1ba087);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
     
     @media (max-width: 768px) {
       .container {
@@ -622,6 +643,15 @@
       
       .score-display {
         flex-direction: column;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .download-btn {
+        width: 100%;
+        margin: 5px 0;
       }
     }
   </style>
@@ -820,9 +850,14 @@
       <h3><i class="fas fa-history"></i> Performance Breakdown</h3>
       <div id="historyContainer"></div>
       
-      <button onclick="resetQuiz()">
-        <i class="fas fa-redo"></i> Start New Quiz
-      </button>
+      <div class="action-buttons">
+        <button onclick="downloadResults()" id="downloadBtn" class="download-btn">
+          <i class="fas fa-download"></i> Download Results
+        </button>
+        <button onclick="resetQuiz()">
+          <i class="fas fa-redo"></i> Start New Quiz
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -949,6 +984,8 @@
         button.innerHTML = `<span class="loading"></span> Submitting...`;
       } else if (buttonId === 'endBtn') {
         button.innerHTML = `<span class="loading"></span> Ending...`;
+      } else if (buttonId === 'downloadBtn') {
+        button.innerHTML = `<span class="loading"></span> Downloading...`;
       }
     } else {
       button.disabled = false;
@@ -958,6 +995,8 @@
         button.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Answer';
       } else if (buttonId === 'endBtn') {
         button.innerHTML = '<i class="fas fa-stop"></i> End Quiz';
+      } else if (buttonId === 'downloadBtn') {
+        button.innerHTML = '<i class="fas fa-download"></i> Download Results';
       }
     }
   }
@@ -1236,7 +1275,7 @@
         'research_paper': 'Research Paper',
         'technical_document': 'Technical Document'
       };
-
+      
       const summaryDiv = document.createElement("div");
       summaryDiv.className = "results-summary";
       summaryDiv.innerHTML = `
@@ -1292,6 +1331,44 @@
     } catch (error) {
       showAlert("Failed to load final score. Please refresh the page.");
       console.error(error);
+    }
+  }
+
+  // Download Results Function
+  async function downloadResults() {
+    setLoading('downloadBtn', true);
+    
+    try {
+      const response = await fetch('/download_results');
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const filename = (
+          response.headers.get('content-disposition')?.split('filename=')[1]
+          || 'quiz_results.txt'
+        ).replace(/['"]/g, "");
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showAlert('Quiz results downloaded successfully!', 'success');
+      } else {
+        const errorData = await response.json();
+        showAlert(errorData.error || 'Failed to download results', 'error');
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      showAlert('Failed to download results', 'error');
+    } finally {
+      setLoading('downloadBtn', false);
     }
   }
   
