@@ -533,6 +533,121 @@ async def final():
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.get("/download_results")
+async def download_results():
+    try:
+        if not state.qa_history:
+            return JSONResponse({"error": "No quiz data available for download"}, status_code=400)
+        
+        # Calculate final statistics
+        percentage_score = 0
+        if state.questions_answered > 0:
+            percentage_score = round((state.total_score / state.questions_answered) * 100, 2)
+        
+        # Create comprehensive results data
+        results_data = {
+            "quiz_summary": {
+                "document_type": state.document_type.replace("_", " ").title(),
+                "difficulty": state.difficulty.title(),
+                "backend_used": state.backend,
+                "total_questions": state.total_questions,
+                "questions_answered": state.questions_answered,
+                "correct_answers": state.total_score,
+                "incorrect_answers": state.questions_answered - state.total_score,
+                "percentage_score": percentage_score,
+                "completed_early": state.quiz_ended_early,
+                "quiz_date": "Generated Quiz Results"
+            },
+            "questions_and_answers": []
+        }
+        
+        # Add each question with details
+        for i, qa in enumerate(state.qa_history, 1):
+            question_data = {
+                "question_number": i,
+                "topic": qa["topic"],
+                "question": qa["question"],
+                "options": {
+                    "A": qa["options"][0],
+                    "B": qa["options"],
+                    "C": qa["options"],
+                    "D": qa["options"]
+                },
+                "your_answer": chr(65 + qa["selected_answer"]) + ". " + qa["options"][qa["selected_answer"]],
+                "correct_answer": chr(65 + qa["correct_answer"]) + ". " + qa["options"][qa["correct_answer"]],
+                "result": "Correct ✓" if qa["is_correct"] else "Incorrect ✗",
+                "explanation": qa["explanation"],
+                "points_earned": qa["score"]
+            }
+            results_data["questions_and_answers"].append(question_data)
+        
+        # Create formatted text content
+        content = f"""
+QUIZ RESULTS REPORT
+==================
+
+QUIZ SUMMARY
+-----------
+Document Type: {results_data['quiz_summary']['document_type']}
+Difficulty Level: {results_data['quiz_summary']['difficulty']}
+AI Backend Used: {results_data['quiz_summary']['backend_used']}
+Total Questions Available: {results_data['quiz_summary']['total_questions']}
+Questions Answered: {results_data['quiz_summary']['questions_answered']}
+Correct Answers: {results_data['quiz_summary']['correct_answers']}
+Incorrect Answers: {results_data['quiz_summary']['incorrect_answers']}
+Final Score: {results_data['quiz_summary']['percentage_score']}%
+Quiz Status: {'Completed Early' if results_data['quiz_summary']['completed_early'] else 'Completed'}
+
+DETAILED QUESTIONS & ANSWERS
+============================
+"""
+        
+        for qa in results_data["questions_and_answers"]:
+            content += f"""
+Question {qa['question_number']}: {qa['topic']}
+{'-' * (15 + len(str(qa['question_number'])) + len(qa['topic']))}
+Q: {qa['question']}
+
+Options:
+A) {qa['options']['A']}
+B) {qa['options']['B']}
+C) {qa['options']['C']}
+D) {qa['options']['D']}
+
+Your Answer: {qa['your_answer']}
+Correct Answer: {qa['correct_answer']}
+Result: {qa['result']}
+Points Earned: {qa['points_earned']}/1
+
+Explanation: {qa['explanation']}
+
+"""
+        
+        content += f"""
+END OF REPORT
+=============
+Generated on: {results_data['quiz_summary']['quiz_date']}
+Total Score: {results_data['quiz_summary']['correct_answers']}/{results_data['quiz_summary']['questions_answered']} ({results_data['quiz_summary']['percentage_score']}%)
+"""
+        
+        # Create temporary file
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8')
+        temp_file.write(content)
+        temp_file.close()
+        
+        # Return file for download
+        filename = f"quiz_results_{state.document_type}_{state.difficulty}.txt"
+        
+        return FileResponse(
+            temp_file.name,
+            media_type="text/plain",
+            filename=filename,
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # ==== Run Server ====
 if __name__ == "__main__":
