@@ -538,181 +538,109 @@ async def download_results():
         if not state.qa_history:
             return JSONResponse({"error": "No quiz data available for download"}, status_code=400)
         
-        from fpdf import FPDF
-        from datetime import datetime
-        
         # Calculate final statistics
         percentage_score = 0
         if state.questions_answered > 0:
             percentage_score = round((state.total_score / state.questions_answered) * 100, 2)
         
-        # Create PDF
-        pdf = FPDF()
-        pdf.add_page()
+        # Create comprehensive results data
+        results_data = {
+            "quiz_summary": {
+                "document_type": state.document_type.replace("_", " ").title(),
+                "difficulty": state.difficulty.title(),
+                "backend_used": state.backend,
+                "total_questions": state.total_questions,
+                "questions_answered": state.questions_answered,
+                "correct_answers": state.total_score,
+                "incorrect_answers": state.questions_answered - state.total_score,
+                "percentage_score": percentage_score,
+                "completed_early": state.quiz_ended_early,
+                "quiz_date": "Generated Quiz Results"
+            },
+            "questions_and_answers": []
+        }
         
-        # Set title
-        pdf.set_font('Arial', 'B', 20)
-        pdf.cell(0, 15, 'QUIZ RESULTS REPORT', 0, 1, 'C')
-        pdf.ln(10)
-        
-        # Quiz Summary Section
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(0, 10, 'QUIZ SUMMARY', 0, 1, 'L')
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(5)
-        
-        pdf.set_font('Arial', '', 12)
-        summary_data = [
-            f"Document Type: {state.document_type.replace('_', ' ').title()}",
-            f"Difficulty Level: {state.difficulty.title()}",
-            f"AI Backend Used: {state.backend.title()}",
-            f"Total Questions Available: {state.total_questions}",
-            f"Questions Answered: {state.questions_answered}",
-            f"Correct Answers: {state.total_score}",
-            f"Incorrect Answers: {state.questions_answered - state.total_score}",
-            f"Final Score: {percentage_score}%",
-            f"Quiz Status: {'Completed Early' if state.quiz_ended_early else 'Completed'}",
-            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        ]
-        
-        for item in summary_data:
-            pdf.cell(0, 8, item, 0, 1, 'L')
-        
-        pdf.ln(10)
-        
-        # Detailed Questions & Answers Section
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(0, 10, 'DETAILED QUESTIONS & ANSWERS', 0, 1, 'L')
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(5)
-        
+        # Add each question with details
         for i, qa in enumerate(state.qa_history, 1):
-            # Check if we need a new page
-            if pdf.get_y() > 250:
-                pdf.add_page()
-            
-            # Question Header
-            pdf.set_font('Arial', 'B', 14)
-            pdf.cell(0, 10, f"Question {i}: {qa['topic']}", 0, 1, 'L')
-            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-            pdf.ln(3)
-            
-            # Question Text
-            pdf.set_font('Arial', 'B', 12)
-            pdf.cell(0, 8, "Q:", 0, 0, 'L')
-            pdf.set_font('Arial', '', 12)
-            
-            # Handle long questions with text wrapping
-            question_text = qa["question"]
-            if len(question_text) > 80:
-                words = question_text.split(' ')
-                lines = []
-                current_line = ""
-                for word in words:
-                    if len(current_line + word) < 80:
-                        current_line += word + " "
-                    else:
-                        lines.append(current_line.strip())
-                        current_line = word + " "
-                lines.append(current_line.strip())
-                
-                for j, line in enumerate(lines):
-                    if j == 0:
-                        pdf.cell(0, 8, f" {line}", 0, 1, 'L')
-                    else:
-                        pdf.cell(0, 8, f"   {line}", 0, 1, 'L')
-            else:
-                pdf.cell(0, 8, f" {question_text}", 0, 1, 'L')
-            
-            pdf.ln(3)
-            
-            # Options
-            pdf.set_font('Arial', 'B', 12)
-            pdf.cell(0, 8, "Options:", 0, 1, 'L')
-            pdf.set_font('Arial', '', 12)
-            
-            for j, option in enumerate(qa["options"]):
-                option_letter = chr(65 + j)
-                if len(option) > 70:
-                    option = option[:67] + "..."
-                pdf.cell(0, 6, f"   {option_letter}) {option}", 0, 1, 'L')
-            
-            pdf.ln(2)
-            
-            # Answers and Result
-            pdf.set_font('Arial', 'B', 12)
-            your_answer = chr(65 + qa["selected_answer"]) if qa["selected_answer"] is not None else "No answer"
-            correct_answer = chr(65 + qa["correct_answer"])
-            result = "Correct ✓" if qa["is_correct"] else "Incorrect ✗"
-            
-            pdf.cell(0, 6, f"Your Answer: {your_answer}", 0, 1, 'L')
-            pdf.cell(0, 6, f"Correct Answer: {correct_answer}", 0, 1, 'L')
-            
-            # Color-code the result
-            if qa["is_correct"]:
-                pdf.set_text_color(0, 128, 0)  # Green for correct
-            else:
-                pdf.set_text_color(255, 0, 0)  # Red for incorrect
-            
-            pdf.cell(0, 6, f"Result: {result}", 0, 1, 'L')
-            pdf.set_text_color(0, 0, 0)  # Reset to black
-            
-            pdf.cell(0, 6, f"Points Earned: {qa['score']}/1", 0, 1, 'L')
-            pdf.ln(2)
-            
-            # Explanation
-            pdf.set_font('Arial', 'B', 12)
-            pdf.cell(0, 6, "Explanation:", 0, 1, 'L')
-            pdf.set_font('Arial', '', 12)
-            
-            # Handle long explanations
-            explanation = qa["explanation"]
-            if len(explanation) > 80:
-                words = explanation.split(' ')
-                lines = []
-                current_line = ""
-                for word in words:
-                    if len(current_line + word) < 80:
-                        current_line += word + " "
-                    else:
-                        lines.append(current_line.strip())
-                        current_line = word + " "
-                lines.append(current_line.strip())
-                
-                for line in lines:
-                    pdf.cell(0, 6, f"   {line}", 0, 1, 'L')
-            else:
-                pdf.cell(0, 6, f"   {explanation}", 0, 1, 'L')
-            
-            pdf.ln(8)
+            question_data = {
+                "question_number": i,
+                "topic": qa["topic"],
+                "question": qa["question"],
+                "options": {
+                    "A": qa["options"][0],
+                    "B": qa["options"],
+                    "C": qa["options"],
+                    "D": qa["options"]
+                },
+                "your_answer": chr(65 + qa["selected_answer"]) + ". " + qa["options"][qa["selected_answer"]],
+                "correct_answer": chr(65 + qa["correct_answer"]) + ". " + qa["options"][qa["correct_answer"]],
+                "result": "Correct ✓" if qa["is_correct"] else "Incorrect ✗",
+                "explanation": qa["explanation"],
+                "points_earned": qa["score"]
+            }
+            results_data["questions_and_answers"].append(question_data)
         
-        # Final Summary
-        if pdf.get_y() > 200:
-            pdf.add_page()
+        # Create formatted text content
+        content = f"""
+QUIZ RESULTS REPORT
+==================
+
+QUIZ SUMMARY
+-----------
+Document Type: {results_data['quiz_summary']['document_type']}
+Difficulty Level: {results_data['quiz_summary']['difficulty']}
+AI Backend Used: {results_data['quiz_summary']['backend_used']}
+Total Questions Available: {results_data['quiz_summary']['total_questions']}
+Questions Answered: {results_data['quiz_summary']['questions_answered']}
+Correct Answers: {results_data['quiz_summary']['correct_answers']}
+Incorrect Answers: {results_data['quiz_summary']['incorrect_answers']}
+Final Score: {results_data['quiz_summary']['percentage_score']}%
+Quiz Status: {'Completed Early' if results_data['quiz_summary']['completed_early'] else 'Completed'}
+
+DETAILED QUESTIONS & ANSWERS
+============================
+"""
         
-        pdf.ln(10)
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(0, 10, 'END OF REPORT', 0, 1, 'C')
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(5)
+        for qa in results_data["questions_and_answers"]:
+            content += f"""
+Question {qa['question_number']}: {qa['topic']}
+{'-' * (15 + len(str(qa['question_number'])) + len(qa['topic']))}
+Q: {qa['question']}
+
+Options:
+A) {qa['options']['A']}
+B) {qa['options']['B']}
+C) {qa['options']['C']}
+D) {qa['options']['D']}
+
+Your Answer: {qa['your_answer']}
+Correct Answer: {qa['correct_answer']}
+Result: {qa['result']}
+Points Earned: {qa['points_earned']}/1
+
+Explanation: {qa['explanation']}
+
+"""
         
-        pdf.set_font('Arial', 'B', 14)
-        pdf.cell(0, 10, f"Total Score: {state.total_score}/{state.questions_answered} ({percentage_score}%)", 0, 1, 'C')
+        content += f"""
+END OF REPORT
+=============
+Generated on: {results_data['quiz_summary']['quiz_date']}
+Total Score: {results_data['quiz_summary']['correct_answers']}/{results_data['quiz_summary']['questions_answered']} ({results_data['quiz_summary']['percentage_score']}%)
+"""
         
         # Create temporary file
         import tempfile
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8')
+        temp_file.write(content)
         temp_file.close()
         
-        # Save PDF to temporary file
-        pdf.output(temp_file.name)
-        
         # Return file for download
-        filename = f"quiz_results_{state.document_type}_{state.difficulty}.pdf"
+        filename = f"quiz_results_{state.document_type}_{state.difficulty}.txt"
         
         return FileResponse(
             temp_file.name,
-            media_type="application/pdf",  # Now this is correct!
+            media_type="text/plain",
             filename=filename,
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
