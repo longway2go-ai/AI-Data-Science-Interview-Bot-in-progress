@@ -24,7 +24,7 @@ An intelligent interview preparation platform that generates personalized techni
 
 - **Backend**: FastAPI (Python)
 - **Frontend**: HTML5, CSS3, JavaScript
-- **AI Models**: Google Gemini Pro, Groq LLaMA
+- **AI Models**: Google Gemini Pro, Groq LLaMA, OpenAI
 - **File Processing**: PyPDF2 for PDF parsing
 - **Deployment**: Render (Free Tier)
 - **UI Framework**: Custom CSS with Font Awesome icons
@@ -32,7 +32,7 @@ An intelligent interview preparation platform that generates personalized techni
 ## 📋 Prerequisites
 
 - Python 3.9 or higher
-- Google Gemini API key **OR** Groq API key
+- Google Gemini API key **OR** Groq API key **OR** OpenAI
 - Git (for deployment)
 
 ### 🔑 Getting API Keys
@@ -48,6 +48,12 @@ An intelligent interview preparation platform that generates personalized techni
 2. Sign up/Sign in
 3. Navigate to API Keys section
 4. Create new API key
+
+**OpenAI API:**
+1. Visit [OpenAI](https://makersuite.google.com/app/apikey)
+2. Sign in/ Sign up
+3. Click "Create API Key"
+4. Copy your API key
 
 ## 🏠 Local Installation
 
